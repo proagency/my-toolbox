@@ -24,7 +24,6 @@
   if (!root) {
     root = document.createElement('div');
     root.id = 'mtbRoot';
-    root.style.display = 'none';
     document.body.appendChild(root);
   }
   // Put overrides on root for app consumption (if your app.js reads dataset),
