@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Toolbox – GitHub Pages</title>
+  <title>My Toolbox – Widget</title>
 
   <!-- Google Fonts: Montserrat -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,83 +13,295 @@
   <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
-  <!-- Widget styles -->
   <link rel="stylesheet" href="./style.css" />
-
-  <style>
-    /* Minimal page chrome for QA only */
-    body { background:#0b1220; color:#e2e8f0; font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    .qa { position: fixed; top: 16px; left: 16px; z-index: 5; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 12px; backdrop-filter: blur(6px); }
-    .qa h1 { margin:0 0 10px; font-size:14px; letter-spacing:.3px; color:#93c5fd }
-    .qa .row { display:flex; gap:8px; flex-wrap:wrap }
-    .qa button { 
-      border:1px solid rgba(255,255,255,.18); background:#0f172a; color:#e2e8f0; 
-      padding:8px 10px; border-radius:10px; cursor:pointer; 
-    }
-    .qa button:hover { background:#111827; }
-    .qa small { display:block; opacity:.7; margin-top:8px; }
-    a.qa-link { color:#93c5fd; text-decoration: none; }
-    a.qa-link:hover { text-decoration: underline; }
-  </style>
 </head>
 <body>
-
-  <!-- Tiny QA panel (optional) -->
-  <div class="qa" aria-live="polite">
-    <h1>My Toolbox — Test Panel</h1>
-    <div class="row">
-      <button id="qaOpen">Open Widget</button>
-      <button id="qaClose">Close Widget</button>
-      <button id="qaSync">Open Sync Modal</button>
-      <button id="qaClear">Clear Local Storage</button>
-    </div>
-    <small>
-      Pages URL: <a class="qa-link" href="." target="_blank" rel="noopener">reload</a> •
-      Make sure your Make.com webhook allows CORS from this origin.
-    </small>
-  </div>
+  <!-- Demo content (page behind the widget) -->
+  <main style="padding: 24px; max-width: 840px; margin: auto;">
+    <h1>Demo page</h1>
+    <p>This page is just here so you can open/close the widget on top of it.</p>
+  </main>
 
   <!-- My Toolbox ROOT -->
-  <!-- Tip: override endpoints per environment using data-* attributes -->
-  <div
-    id="mtbRoot"
-    style="display:none"
-    data-otp-url="https://hook.us2.make.com/your-otp-entry"            <!-- optional -->
-    data-review-webhook-url="https://hook.us2.make.com/reviews"         <!-- optional -->
-    data-agent-webhook-url="https://hook.us2.make.com/agent"            <!-- optional -->
-    data-upload-webhook-url="https://hook.us2.make.com/upload"          <!-- optional -->
-    data-booking-url="https://cal.com/your-org/your-calendar?embed=1"   <!-- optional -->
-    data-default-results="https://docs.google.com/spreadsheets/d/your-sheet-id/preview"  <!-- optional -->
-  ></div>
+  <div id="mtbRoot" style="display:none">
+    <!-- Launcher -->
+    <button id="mtbFab" aria-label="Open My Toolbox"><i class="fa-solid fa-toolbox"></i></button>
 
-  <!-- Widget app -->
-  <script src="./app.js" defer></script>
+    <!-- Portal -->
+    <div id="mtbModal" role="dialog" aria-modal="true" hidden>
+      <div id="mtbOverlay"></div>
+      <div class="mtb-window" role="document">
+        <div class="mtb-shell" id="mtbShell">
+          <!-- Sidebar -->
+          <aside class="mtb-sidebar" aria-label="Sidebar" data-open="false">
+            <div class="sb-header">
+              <h2><i class="fa-solid fa-screwdriver-wrench"></i> My Toolbox</h2>
+              <!-- mobile-only close -->
+              <button id="sbCloseMobile" class="icon-btn sb-close-mobile" aria-label="Close sidebar">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
 
-  <!-- QA helpers (doesn’t touch your app.js internals) -->
-  <script>
-    // When app.js initializes, it creates the FAB and the modal inside #mtbRoot.
-    // These helpers just click those controls for you.
-    function clickSel(sel){ const el = document.querySelector(sel); if(el) el.click(); }
-    function openWidget(){ clickSel("#mtbFab"); }
-    function closeWidget(){ clickSel("#mtbClose"); }
-    function openSync(){ 
-      // ensure widget open first
-      if (document.querySelector("#mtbModal[hidden]")) openWidget();
-      setTimeout(() => clickSel("#openSync"), 50);
-    }
-    function clearLS(){
-      const keepKeys = []; // put keys you don't want to wipe here
-      const allKeys = Object.keys(localStorage);
-      allKeys.forEach(k => { if (!keepKeys.includes(k)) localStorage.removeItem(k); });
-      alert("Local storage cleared for this origin.");
-    }
-    // Bind QA buttons
-    addEventListener("DOMContentLoaded", () => {
-      document.getElementById("qaOpen")?.addEventListener("click", openWidget);
-      document.getElementById("qaClose")?.addEventListener("click", closeWidget);
-      document.getElementById("qaSync")?.addEventListener("click", openSync);
-      document.getElementById("qaClear")?.addEventListener("click", clearLS);
-    });
-  </script>
+            <!-- Scrollable body -->
+            <div class="sb-body" id="sbBody">
+              <!-- Tools -->
+              <div class="sb-group">
+                <button class="sb-title collapsible" id="toolsToggle" aria-expanded="true">
+                  <i class="fa-solid fa-wrench"></i> Tools <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+                <nav class="sb-nav" id="toolsNav" aria-label="Tools">
+                  <button class="sb-item active" data-target="quick-links"><i class="fa-solid fa-bolt"></i><span>Quick Links</span></button>
+                  <button class="sb-item" data-target="results"><i class="fa-solid fa-chart-line"></i><span>Results</span></button>
+                  <button class="sb-item" data-target="reviews"><i class="fa-solid fa-star"></i><span>Reviews</span></button>
+                  <button class="sb-item" data-target="uploads"><i class="fa-solid fa-file-arrow-up"></i><span>Uploads</span></button>
+                </nav>
+              </div>
+
+              <!-- Support -->
+              <div class="sb-group">
+                <button class="sb-title collapsible" id="supportToggle" aria-expanded="true">
+                  <i class="fa-solid fa-life-ring"></i> Support <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+                <nav class="sb-nav" id="supportNav" aria-label="Support">
+                  <button class="sb-item" data-target="ai-agent"><i class="fa-solid fa-robot"></i><span>Ask AI Agent</span></button>
+                  <button class="sb-item" data-target="book-session"><i class="fa-solid fa-calendar-days"></i><span>Book A Session</span></button>
+                  <button class="sb-item" data-target="tickets"><i class="fa-solid fa-ticket"></i><span>Tickets</span></button>
+                </nav>
+              </div>
+
+              <!-- Settings -->
+              <div class="sb-group">
+                <button class="sb-title collapsible" id="settingsToggle" aria-expanded="true">
+                  <i class="fa-solid fa-gear"></i> Settings <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+                <nav class="sb-nav" id="settingsNav" aria-label="Settings">
+                  <button class="sb-item" data-target="getting-started"><i class="fa-solid fa-rocket"></i><span>Getting Started</span></button>
+                  <button class="sb-item" data-target="sync-data"><i class="fa-solid fa-arrows-rotate"></i><span>Sync Data</span></button>
+                </nav>
+              </div>
+            </div>
+
+            <!-- Fixed footer -->
+            <div class="sb-footer">
+              <div class="cid"><span class="muted">contactId:</span> <span id="cidLabel">—</span></div>
+              <div class="footer-actions">
+                <button id="resyncBtn" class="icon-btn" title="Re-sync"><i class="fa-solid fa-rotate"></i></button>
+                <button id="openDetailsBtn" class="icon-btn" title="Synced Details"><i class="fa-solid fa-gear"></i></button>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Main -->
+          <main class="mtb-main">
+            <header class="topbar">
+              <div class="left">
+                <button id="sbToggle" class="ghost" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+                <div class="breadcrumbs" aria-live="polite"><span id="crumbs">My Toolbox / Tools / Quick Links</span></div>
+              </div>
+              <button id="mtbClose" class="ghost" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+
+            <!-- Sections -->
+            <section id="quick-links" class="sec active" tabindex="0">
+              <div class="sec-body">
+                <div class="cards ql-grid">
+                  <div class="card ql" data-target="getting-started"><i class="fa-solid fa-rocket"></i><div>Onboarding Form</div></div>
+                  <div class="card ql" data-target="results"><i class="fa-solid fa-chart-line"></i><div>Results</div></div>
+                  <div class="card ql" data-target="reviews"><i class="fa-solid fa-star"></i><div>Reviews</div></div>
+                  <div class="card ql" data-target="uploads"><i class="fa-solid fa-file-arrow-up"></i><div>Uploads</div></div>
+                  <div class="card ql" data-target="ai-agent"><i class="fa-solid fa-robot"></i><div>Ask AI Agent</div></div>
+                  <div class="card ql" data-target="book-session"><i class="fa-solid fa-calendar-days"></i><div>Book A Session</div></div>
+                  <div class="card ql" data-target="tickets"><i class="fa-solid fa-ticket"></i><div>Tickets</div></div>
+                </div>
+              </div>
+            </section>
+
+            <section id="results" class="sec" tabindex="0">
+              <div class="sec-actions">
+                <button class="tiny secondary" id="dlResults"><i class="fa-solid fa-download"></i> Download</button>
+                <button class="tiny primary" id="refResults"><i class="fa-solid fa-rotate"></i> Refresh</button>
+              </div>
+              <div class="sec-body">
+                <div class="embed"><iframe title="Results"></iframe></div>
+              </div>
+            </section>
+
+            <section id="reviews" class="sec" tabindex="0">
+              <div class="sec-actions">
+                <button class="tiny secondary" id="viewReview"><i class="fa-solid fa-up-right-from-square"></i> View Review Page</button>
+              </div>
+              <div class="sec-body">
+                <form id="reviewsForm" class="grid2" novalidate>
+                  <label>Name <input name="name" required></label>
+                  <label>Email <input name="email" type="email" required></label>
+                  <div class="actions">
+                    <button class="primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Send Review Invite</button>
+                    <span id="reviewsStatus" class="muted"></span>
+                  </div>
+                </form>
+              </div>
+            </section>
+
+            <section id="uploads" class="sec" tabindex="0">
+              <div class="sec-body">
+                <form id="uploadForm" class="grid2" novalidate>
+                  <label>Title
+                    <select id="uploadTitle" required>
+                      <option value="">Choose…</option>
+                      <option>Lead List</option>
+                      <option>Product Pricing Specs</option>
+                      <option>Safety Data Sheet</option>
+                      <option>Company Details</option>
+                      <option>Others</option>
+                    </select>
+                  </label>
+                  <label>File(s) <input id="uploadFiles" type="file" accept=".csv,.xlsx,.pdf,.png,.jpg,.jpeg" multiple required></label>
+                  <div class="actions">
+                    <button id="uploadBtn" class="secondary" type="submit"><i class="fa-solid fa-cloud-arrow-up"></i> Upload</button>
+                    <span id="uploadStatus" class="muted"></span>
+                  </div>
+                </form>
+              </div>
+            </section>
+
+            <section id="ai-agent" class="sec" tabindex="0">
+              <div class="sec-body">
+                <div class="chat">
+                  <div id="chatLog" class="chat-log" aria-live="polite"></div>
+                  <form id="chatForm" class="chat-input">
+                    <textarea id="chatText" rows="1" placeholder="Ask the agent… (Enter to send, Shift+Enter newline)" required></textarea>
+                    <button id="chatSend" class="primary" type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+                    <button id="chatReset" class="secondary" type="button"><i class="fa-solid fa-trash-can"></i></button>
+                  </form>
+                </div>
+              </div>
+            </section>
+
+            <section id="book-session" class="sec" tabindex="0">
+              <div class="sec-body">
+                <div class="embed"><iframe title="Booking Calendar"></iframe></div>
+              </div>
+            </section>
+
+            <section id="tickets" class="sec" tabindex="0">
+              <div class="sec-body">
+                <div class="tickets">
+                  <div class="t-left">
+                    <a id="callUs" class="card contact" href="#"><i class="fa-solid fa-phone"></i><div><div class="title">Call</div><div class="desc">Urgent only</div></div></a>
+                    <a id="whatsApp" class="card contact" href="#" target="_blank"><i class="fa-brands fa-whatsapp"></i><div><div class="title">WhatsApp</div><div class="desc">Fastest reply</div></div></a>
+                  </div>
+                  <form id="ticketForm" class="t-right" novalidate>
+                    <label>Category
+                      <select id="ticketCat" required>
+                        <option value="">Choose…</option>
+                        <option>Billing</option>
+                        <option>Scheduling</option>
+                        <option>Results / Reporting</option>
+                        <option>Reviews</option>
+                        <option>Uploads</option>
+                        <option>Other</option>
+                      </select>
+                    </label>
+                    <label>Subject <input id="ticketSubj" required></label>
+                    <label>Describe the Issue <textarea id="ticketMsg" rows="5" required></textarea></label>
+                    <div class="actions">
+                      <button class="primary" type="submit"><i class="fa-solid fa-ticket"></i> Submit Ticket</button>
+                      <span id="ticketStatus" class="muted"></span>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </section>
+
+            <section id="getting-started" class="sec" tabindex="0">
+              <div class="sec-body">
+                <form id="obForm" class="grid2" novalidate>
+                  <label>Company <input name="company" required></label>
+                  <label>Contact Person <input name="contact" required></label>
+                  <label>Email <input name="email" type="email" required></label>
+                  <label>Phone <input name="phone" type="tel"></label>
+                  <label>Website <input name="website" type="url"></label>
+                  <label>Start Date <input name="startDate" type="date"></label>
+                  <label>Goal
+                    <select name="goal"><option value="">Select…</option><option>Leads</option><option>Sales</option><option>Awareness</option></select>
+                  </label>
+                  <label>Budget
+                    <select name="budget"><option value="">Select…</option><option>$500–$2k</option><option>$2k–$5k</option><option>$5k–$10k</option><option>$10k+</option></select>
+                  </label>
+                  <label>Notes <textarea name="notes" rows="8"></textarea></label>
+                  <div class="actions">
+                    <button class="primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Submit</button>
+                    <button id="obSave" class="secondary" type="button"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+                    <span id="obStatus" class="muted"></span>
+                  </div>
+                </form>
+              </div>
+            </section>
+
+            <section id="sync-data" class="sec" tabindex="0">
+              <div class="sec-body centered">
+                <button id="openSync" class="primary"><i class="fa-solid fa-arrows-rotate"></i> Sync Data</button>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+
+      <!-- Mini Sync Modal (OTP) -->
+      <div id="miniModal" class="mini" role="dialog" aria-modal="true" aria-labelledby="syncTitle" hidden>
+        <div class="mini-card">
+          <div class="mini-head">
+            <div id="syncTitle"><i class="fa-solid fa-shield-keyhole"></i> Verify & Sync</div>
+            <button id="miniClose" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+
+          <div class="mini-body" id="otpStageEmail">
+            <label>Account Email
+              <input id="syncEmail" type="email" placeholder="name@company.com" required>
+            </label>
+            <button id="sendOtpBtn" class="primary full"><i class="fa-solid fa-paper-plane"></i> Send Code</button>
+            <div id="otpEmailMsg" class="muted"></div>
+          </div>
+
+          <div class="mini-body hidden" id="otpStageCode">
+            <div class="otp-instructions">Enter the 6-digit code we sent to <span id="otpEmailEcho"></span>.</div>
+            <div class="otp-inputs" id="otpInputs" aria-label="One-time code">
+              <input inputmode="numeric" pattern="[0-9]*" maxlength="1">
+              <input inputmode="numeric" pattern="[0-9]*" maxlength="1">
+              <input inputmode="numeric" pattern="[0-9]*" maxlength="1">
+              <input inputmode="numeric" pattern="[0-9]*" maxlength="1">
+              <input inputmode="numeric" pattern="[0-9]*" maxlength="1">
+              <input inputmode="numeric" pattern="[0-9]*" maxlength="1">
+            </div>
+            <div class="otp-actions">
+              <button id="verifyOtpBtn" class="primary"><i class="fa-solid fa-circle-check"></i> Verify</button>
+              <button id="resendOtpBtn" class="secondary" disabled><i class="fa-solid fa-rotate"></i> Resend <span id="resendTimer">30</span>s</button>
+            </div>
+            <div id="otpCodeMsg" class="muted"></div>
+          </div>
+
+          <div class="mini-body hidden" id="otpStageSync">
+            <div class="muted">Syncing your data…</div>
+            <div id="syncProgWrap" class="prog"><div id="syncBar" class="bar"></div></div>
+            <div id="syncPct" class="pct">0%</div>
+            <div id="syncMsg" class="muted"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details modal -->
+      <div id="detailsModal" class="mini" role="dialog" aria-modal="true" aria-labelledby="detailsTitle" hidden>
+        <div class="mini-card">
+          <div class="mini-head">
+            <div id="detailsTitle"><i class="fa-solid fa-table"></i> Synced Details</div>
+            <button id="detailsClose" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <div class="mini-body"><div id="detailsTable"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
 </body>
 </html>
