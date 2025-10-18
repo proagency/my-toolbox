@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Toolbox – GitHub Pages</title>
+
+  <!-- Google Fonts: Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- Widget styles -->
+  <link rel="stylesheet" href="./style.css" />
+
+  <style>
+    /* Minimal page chrome for QA only */
+    body { background:#0b1220; color:#e2e8f0; font-family: "Montserrat", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    .qa { position: fixed; top: 16px; left: 16px; z-index: 5; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 12px; backdrop-filter: blur(6px); }
+    .qa h1 { margin:0 0 10px; font-size:14px; letter-spacing:.3px; color:#93c5fd }
+    .qa .row { display:flex; gap:8px; flex-wrap:wrap }
+    .qa button { 
+      border:1px solid rgba(255,255,255,.18); background:#0f172a; color:#e2e8f0; 
+      padding:8px 10px; border-radius:10px; cursor:pointer; 
+    }
+    .qa button:hover { background:#111827; }
+    .qa small { display:block; opacity:.7; margin-top:8px; }
+    a.qa-link { color:#93c5fd; text-decoration: none; }
+    a.qa-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- Tiny QA panel (optional) -->
+  <div class="qa" aria-live="polite">
+    <h1>My Toolbox — Test Panel</h1>
+    <div class="row">
+      <button id="qaOpen">Open Widget</button>
+      <button id="qaClose">Close Widget</button>
+      <button id="qaSync">Open Sync Modal</button>
+      <button id="qaClear">Clear Local Storage</button>
+    </div>
+    <small>
+      Pages URL: <a class="qa-link" href="." target="_blank" rel="noopener">reload</a> •
+      Make sure your Make.com webhook allows CORS from this origin.
+    </small>
+  </div>
+
+  <!-- My Toolbox ROOT -->
+  <!-- Tip: override endpoints per environment using data-* attributes -->
+  <div
+    id="mtbRoot"
+    style="display:none"
+    data-otp-url="https://hook.us2.make.com/your-otp-entry"            <!-- optional -->
+    data-review-webhook-url="https://hook.us2.make.com/reviews"         <!-- optional -->
+    data-agent-webhook-url="https://hook.us2.make.com/agent"            <!-- optional -->
+    data-upload-webhook-url="https://hook.us2.make.com/upload"          <!-- optional -->
+    data-booking-url="https://cal.com/your-org/your-calendar?embed=1"   <!-- optional -->
+    data-default-results="https://docs.google.com/spreadsheets/d/your-sheet-id/preview"  <!-- optional -->
+  ></div>
+
+  <!-- Widget app -->
+  <script src="./app.js" defer></script>
+
+  <!-- QA helpers (doesn’t touch your app.js internals) -->
+  <script>
+    // When app.js initializes, it creates the FAB and the modal inside #mtbRoot.
+    // These helpers just click those controls for you.
+    function clickSel(sel){ const el = document.querySelector(sel); if(el) el.click(); }
+    function openWidget(){ clickSel("#mtbFab"); }
+    function closeWidget(){ clickSel("#mtbClose"); }
+    function openSync(){ 
+      // ensure widget open first
+      if (document.querySelector("#mtbModal[hidden]")) openWidget();
+      setTimeout(() => clickSel("#openSync"), 50);
+    }
+    function clearLS(){
+      const keepKeys = []; // put keys you don't want to wipe here
+      const allKeys = Object.keys(localStorage);
+      allKeys.forEach(k => { if (!keepKeys.includes(k)) localStorage.removeItem(k); });
+      alert("Local storage cleared for this origin.");
+    }
+    // Bind QA buttons
+    addEventListener("DOMContentLoaded", () => {
+      document.getElementById("qaOpen")?.addEventListener("click", openWidget);
+      document.getElementById("qaClose")?.addEventListener("click", closeWidget);
+      document.getElementById("qaSync")?.addEventListener("click", openSync);
+      document.getElementById("qaClear")?.addEventListener("click", clearLS);
+    });
+  </script>
+</body>
+</html>
