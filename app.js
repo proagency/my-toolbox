@@ -197,16 +197,30 @@ function initMyToolbox(){
   function setProg(x){ if(syncBar) syncBar.style.width=x+"%"; if(syncPct) syncPct.textContent=x+"%"; }
 
   function openMini(){
-    const domGrab=document.querySelector('.flex-auto .items-center .hl-text-sm-regular')?.textContent?.trim()||"";
-    const lsEmail=localStorage.getItem(LS.email)||"";
-    if(syncEmail) syncEmail.value=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(domGrab)?domGrab:lsEmail;
+  // bail if modal root missing
+  if (!mini) return;
 
-    stageEmail?.classList.remove("hidden");
-    stageCode?.classList.add("hidden");
-    stageSync?.classList.add("hidden");
-    otpEmailMsg.textContent=""; otpCodeMsg.textContent=""; syncMsg.textContent=""; setProg(0);
-    mini.hidden=false;
+  // try to auto-grab email or fallback to LS
+  const domGrab = document.querySelector('.flex-auto .items-center .hl-text-sm-regular')?.textContent?.trim() || "";
+  const lsEmail = localStorage.getItem(LS.email) || "";
+  if (syncEmail) {
+    syncEmail.value = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(domGrab) ? domGrab : lsEmail;
   }
+
+  // stage visibility (with guards)
+  show(stageEmail, true);
+  show(stageCode,  false);
+  show(stageSync,  false);
+
+  // clear messages safely
+  setText(otpEmailMsg, "");
+  setText(otpCodeMsg, "");
+  setText(syncMsg, "");
+  setProg(0);
+
+  // reveal modal
+  mini.hidden = false;
+}
   function closeMini(){ mini.hidden=true; clearInterval(OTP.timer); OTP.timer=null; }
   on(miniClose,"click",closeMini);
 
